@@ -54,7 +54,6 @@ public class Main {
                     }
                     
                     reader.close();
-                    
                     System.out.println("Общее количество строк в файле: " + totalLines);
                     System.out.println("Длина самой длинной строки: " + maxLength);
                     System.out.println("Длина самой короткой строки: " + minLength);
