@@ -3,11 +3,6 @@ import java.io.File;
 import java.io.FileReader;
 import java.util.Scanner;
 
-class LineTooLongException extends RuntimeException {
-    public LineTooLongException(String message) {
-        super(message);
-    }
-}
 
 public class Main {
     public static void main(String[] args) {
@@ -32,31 +27,65 @@ public class Main {
                     BufferedReader reader = new BufferedReader(fileReader);
                     
                     int totalLines = 0;
-                    int maxLength = Integer.MIN_VALUE;
-                    int minLength = Integer.MAX_VALUE;
-                    String line;
+                    int googlebotCount = 0;
+                    int yandexbotCount = 0;
                     
+                    String line;
                     while ((line = reader.readLine()) != null) {
                         int length = line.length();
                         
                         if (length > 1024) {
-                            throw new LineTooLongException("Обнаружена строка длиной " + length +
-                                    " символов, что превышает допустимый лимит в 1024 символа.");
+                            throw new LineTooLongException(
+                                    "Обнаружена строка длиной " + length +
+                                            " символов, что превышает допустимый лимит в 1024 символа."
+                            );
                         }
                         
                         totalLines++;
-                        if (length > maxLength) {
-                            maxLength = length;
+                        
+                        int lastQuote = line.lastIndexOf('"');
+                        int prevQuote = line.lastIndexOf('"', lastQuote - 1);
+                        if (prevQuote == -1) {
+                            continue;
                         }
-                        if (length < minLength) {
-                            minLength = length;
+                        String userAgent = line.substring(prevQuote + 1, lastQuote);
+                        
+                        int openBracket = userAgent.indexOf('(');
+                        int closeBracket = userAgent.indexOf(')', openBracket);
+                        if (openBracket == -1 || closeBracket == -1) {
+                            continue;
+                        }
+                        
+                        String firstBrackets = userAgent.substring(openBracket + 1, closeBracket);
+                        String[] parts = firstBrackets.split(";");
+                        
+                        if (parts.length < 2) {
+                            continue;
+                        }
+                        
+                        String secondFragment = parts[1].trim();
+                        int slashIndex = secondFragment.indexOf('/');
+                        String program = (slashIndex != -1)
+                                ? secondFragment.substring(0, slashIndex)
+                                : secondFragment;
+                        
+                        if ("Googlebot".equals(program)) {
+                            googlebotCount++;
+                        } else if ("YandexBot".equals(program)) {
+                            yandexbotCount++;
                         }
                     }
                     
                     reader.close();
-                    System.out.println("Общее количество строк в файле: " + totalLines);
-                    System.out.println("Длина самой длинной строки: " + maxLength);
-                    System.out.println("Длина самой короткой строки: " + minLength);
+                    
+                    if (totalLines > 0) {
+                        double googlebotRatio = (double) googlebotCount / totalLines;
+                        double yandexbotRatio = (double) yandexbotCount / totalLines;
+                        System.out.printf("Доля запросов от Googlebot: %.6f\n", googlebotRatio);
+                        System.out.printf("Доля запросов от YandexBot: %.6f\n", yandexbotRatio);
+                    } else {
+                        System.out.println("Файл пуст.");
+                    }
                     
                 } catch (Exception ex) {
                     ex.printStackTrace();
