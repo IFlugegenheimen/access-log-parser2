@@ -59,6 +59,29 @@ public class Main {
                     fullUrls.stream().sorted().forEach(url -> System.out.println("  - " + url));
                 }
                 
+                System.out.println("\n🔗 Полные URL несуществующих страниц (404):");
+                Set<String> notFoundFullUrls = stats.getAllNotFoundFullUrls();
+                if (notFoundFullUrls.isEmpty()) {
+                    System.out.println("  Нет записей с кодом 404.");
+                } else {
+                    notFoundFullUrls.stream().sorted().forEach(url -> System.out.println("  - " + url));
+                }
+                
+                System.out.println("\n🧭 Доли браузеров:");
+                Map<String, Double> browserStats = stats.getBrowserShare();
+                if (browserStats.isEmpty()) {
+                    System.out.println("  Нет данных о браузерах.");
+                } else {
+                    browserStats.entrySet().stream()
+                            .sorted(Map.Entry.<String, Double>comparingByValue().reversed())
+                            .forEach(entry ->
+                                    System.out.printf("  %s: %.1f%% (%.3f)%n",
+                                            entry.getKey(),
+                                            entry.getValue() * 100,
+                                            entry.getValue())
+                            );
+                }
+                
                 System.out.println("\n📊 Доли операционных систем:");
                 Map<String, Double> osStats = stats.getOperatingSystemShare();
                 if (osStats.isEmpty()) {

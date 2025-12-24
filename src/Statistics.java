@@ -7,7 +7,10 @@ public class Statistics {
     private LocalDateTime maxTime = null;
     
     private final Set<String> existingPages = new HashSet<>();
+    private final Set<String> notFoundPages = new HashSet<>();
     private final Map<String, Integer> osCount = new HashMap<>();
+    private final Map<String, Integer> browserCount = new HashMap<>();
+    
     
     public Statistics() {}
     
@@ -24,13 +27,24 @@ public class Statistics {
             maxTime = ts;
         }
         
+        String path = entry.getPath();
+        
         if (entry.getResponseCode() == 200) {
             existingPages.add(entry.getPath());
+        }
+        
+        else if (entry.getResponseCode() == 404) {
+            notFoundPages.add(path);
         }
         
         String os = entry.getUserAgent().getOs();
         if (os != null && !os.trim().isEmpty()) {
             osCount.put(os, osCount.getOrDefault(os, 0) + 1);
+        }
+        
+        String browser = entry.getUserAgent().getBrowser();
+        if (browser != null && !browser.trim().isEmpty()) {
+            browserCount.put(browser, browserCount.getOrDefault(browser, 0) + 1);
         }
     }
     
@@ -38,6 +52,19 @@ public class Statistics {
         String baseUrl = "https://example.com";
         Set<String> fullUrls = new HashSet<>();
         for (String path : existingPages) {
+            if (path == null || path.isEmpty()) continue;
+            if (!path.startsWith("/")) {
+                path = "/" + path;
+            }
+            fullUrls.add(baseUrl + path);
+        }
+        return fullUrls;
+    }
+    
+    public Set<String> getAllNotFoundFullUrls() {
+        String baseUrl = "https://example.com";
+        Set<String> fullUrls = new HashSet<>();
+        for (String path : notFoundPages) {
             if (path == null || path.isEmpty()) continue;
             if (!path.startsWith("/")) {
                 path = "/" + path;
@@ -64,6 +91,10 @@ public class Statistics {
         return new HashSet<>(existingPages);
     }
     
+    public Set<String> getAllNotFoundPages() {
+        return new HashSet<>(notFoundPages);
+    }
+    
     public Map<String, Double> getOperatingSystemShare() {
         if (osCount.isEmpty()) {
             return new HashMap<>();
@@ -78,5 +109,23 @@ public class Statistics {
         }
         
         return shareMap;
+        
     }
+    
+    public Map<String, Double> getBrowserShare() {
+        return calculateShare(browserCount);
+    }
+    
+    private Map<String, Double> calculateShare(Map<String, Integer> countMap) {
+        if (countMap.isEmpty()) {
+            return new HashMap<>();
+        }
+        int total = countMap.values().stream().mapToInt(Integer::intValue).sum();
+        Map<String, Double> shareMap = new HashMap<>();
+        for (Map.Entry<String, Integer> entry : countMap.entrySet()) {
+            shareMap.put(entry.getKey(), (double) entry.getValue() / total);
+        }
+        return shareMap;
+    }
+    
 }
