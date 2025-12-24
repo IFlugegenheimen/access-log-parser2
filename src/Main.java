@@ -2,7 +2,9 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
+import java.util.Set;
 
 public class Main {
     public static void main(String[] args) {
@@ -49,6 +51,29 @@ public class Main {
                     }
                 }
                 
+                System.out.println("\n🔗 Полные URL существующих страниц (код ответа 200):");
+                Set<String> fullUrls = stats.getAllExistingFullUrls();
+                if (fullUrls.isEmpty()) {
+                    System.out.println("  Нет данных.");
+                } else {
+                    fullUrls.stream().sorted().forEach(url -> System.out.println("  - " + url));
+                }
+                
+                System.out.println("\n📊 Доли операционных систем:");
+                Map<String, Double> osStats = stats.getOperatingSystemShare();
+                if (osStats.isEmpty()) {
+                    System.out.println("  Нет данных об операционных системах.");
+                } else {
+                    osStats.entrySet().stream()
+                            .sorted(Map.Entry.<String, Double>comparingByValue().reversed())
+                            .forEach(entry ->
+                                    System.out.printf("  %s: %.1f%% (%.3f)%n",
+                                            entry.getKey(),
+                                            entry.getValue() * 100,
+                                            entry.getValue())
+                            );
+                }
+                
                 System.out.println("\n✅ Обработка завершена.");
                 System.out.println("Обработано строк: " + processed);
                 if (errors > 0) {
@@ -58,7 +83,7 @@ public class Main {
                 System.out.printf("Средний трафик в час: %.2f байт/час%n", stats.getTrafficRate());
                 
             } catch (Exception e) {
-                System.err.println("Ошибка: " + e.getMessage());
+                System.err.println("❌ Ошибка: " + e.getMessage());
                 e.printStackTrace();
             }
             
