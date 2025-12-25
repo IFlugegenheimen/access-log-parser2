@@ -1,10 +1,12 @@
 public class UserAgent {
+    private final String raw;
     private final String os;
     private final String browser;
     
     public UserAgent(String userAgentString) {
-        this.os = detectOS(userAgentString);
-        this.browser = detectBrowser(userAgentString);
+        this.raw = (userAgentString == null) ? "" : userAgentString;
+        this.os = detectOS(raw);
+        this.browser = detectBrowser(raw);
     }
     
     private String detectOS(String ua) {
@@ -19,10 +21,11 @@ public class UserAgent {
         if (ua.contains("OPR") || ua.contains("Opera")) return "Opera";
         if (ua.contains("Edg") || ua.contains("Edge")) return "Edge";
         if (ua.contains("Chrome")) return "Chrome";
-        // Safari, etc.
         return "other";
     }
     
+    public boolean isBot() { return raw != null && raw.toLowerCase().contains("bot"); }
+    public String getRaw() { return raw; }
     public String getOs() { return os; }
     public String getBrowser() { return browser; }
 }

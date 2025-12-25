@@ -59,6 +59,29 @@ public class Main {
                     fullUrls.stream().sorted().forEach(url -> System.out.println("  - " + url));
                 }
                 
+                System.out.println("\n🔗 Полные URL несуществующих страниц (404):");
+                Set<String> notFoundFullUrls = stats.getAllNotFoundFullUrls();
+                if (notFoundFullUrls.isEmpty()) {
+                    System.out.println("  Нет записей с кодом 404.");
+                } else {
+                    notFoundFullUrls.stream().sorted().forEach(url -> System.out.println("  - " + url));
+                }
+                
+                System.out.println("\n🧭 Доли браузеров:");
+                Map<String, Double> browserStats = stats.getBrowserShare();
+                if (browserStats.isEmpty()) {
+                    System.out.println("  Нет данных о браузерах.");
+                } else {
+                    browserStats.entrySet().stream()
+                            .sorted(Map.Entry.<String, Double>comparingByValue().reversed())
+                            .forEach(entry ->
+                                    System.out.printf("  %s: %.1f%% (%.3f)%n",
+                                            entry.getKey(),
+                                            entry.getValue() * 100,
+                                            entry.getValue())
+                            );
+                }
+                
                 System.out.println("\n📊 Доли операционных систем:");
                 Map<String, Double> osStats = stats.getOperatingSystemShare();
                 if (osStats.isEmpty()) {
@@ -81,6 +104,9 @@ public class Main {
                 }
                 System.out.printf("Общий трафик: %d байт%n", stats.getTotalTraffic());
                 System.out.printf("Средний трафик в час: %.2f байт/час%n", stats.getTrafficRate());
+                System.out.printf("\n🕒 Среднее количество посещений сайта за час (не боты): %.2f%n", stats.getAverageVisitsPerHour());
+                System.out.printf("❌ Среднее количество ошибочных запросов за час (4xx/5xx): %.2f%n", stats.getAverageErrorsPerHour());
+                System.out.printf("👤 Средняя посещаемость на 1 пользователя: %.2f%n", stats.getAverageVisitsPerUser());
                 
             } catch (Exception e) {
                 System.err.println("❌ Ошибка: " + e.getMessage());
