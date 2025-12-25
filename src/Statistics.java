@@ -5,12 +5,13 @@ public class Statistics {
     private long totalTraffic = 0;
     private LocalDateTime minTime = null;
     private LocalDateTime maxTime = null;
-    
     private final Set<String> existingPages = new HashSet<>();
     private final Set<String> notFoundPages = new HashSet<>();
     private final Map<String, Integer> osCount = new HashMap<>();
     private final Map<String, Integer> browserCount = new HashMap<>();
-    
+    private int realUserRequests = 0;
+    private int errorRequests = 0;
+    private final Set<String> realUserIps = new HashSet<>();
     
     public Statistics() {}
     
@@ -28,13 +29,23 @@ public class Statistics {
         }
         
         String path = entry.getPath();
+        int code = entry.getResponseCode();
         
-        if (entry.getResponseCode() == 200) {
-            existingPages.add(entry.getPath());
+        if (code == 200) {
+            existingPages.add(path);
+        } else if (code == 404) {
+            notFoundPages.add(path);
         }
         
-        else if (entry.getResponseCode() == 404) {
-            notFoundPages.add(path);
+        if (code >= 400 && code < 600) {
+            errorRequests++;
+        }
+        
+        boolean isBot = entry.getUserAgent().isBot();
+        
+        if (!isBot) {
+            realUserRequests++;
+            realUserIps.add(entry.getIp());
         }
         
         String os = entry.getUserAgent().getOs();
@@ -48,30 +59,25 @@ public class Statistics {
         }
     }
     
-    public Set<String> getAllExistingFullUrls() {
-        String baseUrl = "https://example.com";
-        Set<String> fullUrls = new HashSet<>();
-        for (String path : existingPages) {
-            if (path == null || path.isEmpty()) continue;
-            if (!path.startsWith("/")) {
-                path = "/" + path;
-            }
-            fullUrls.add(baseUrl + path);
-        }
-        return fullUrls;
+    private long getPeriodInHours() {
+        if (minTime == null || maxTime == null) return 1;
+        long hours = java.time.temporal.ChronoUnit.HOURS.between(minTime, maxTime);
+        return Math.max(1, hours); // не менее 1 часа
     }
     
-    public Set<String> getAllNotFoundFullUrls() {
-        String baseUrl = "https://example.com";
-        Set<String> fullUrls = new HashSet<>();
-        for (String path : notFoundPages) {
-            if (path == null || path.isEmpty()) continue;
-            if (!path.startsWith("/")) {
-                path = "/" + path;
-            }
-            fullUrls.add(baseUrl + path);
-        }
-        return fullUrls;
+    public double getAverageVisitsPerHour() {
+        long hours = getPeriodInHours();
+        return (double) realUserRequests / hours;
+    }
+    
+    public double getAverageErrorsPerHour() {
+        long hours = getPeriodInHours();
+        return (double) errorRequests / hours;
+    }
+    
+    public double getAverageVisitsPerUser() {
+        if (realUserIps.isEmpty()) return 0.0;
+        return (double) realUserRequests / realUserIps.size();
     }
     
     public long getTotalTraffic() {
@@ -79,11 +85,7 @@ public class Statistics {
     }
     
     public double getTrafficRate() {
-        if (minTime == null || maxTime == null) {
-            return 0.0;
-        }
-        long hours = java.time.temporal.ChronoUnit.HOURS.between(minTime, maxTime);
-        if (hours == 0) hours = 1;
+        long hours = getPeriodInHours();
         return (double) totalTraffic / hours;
     }
     
@@ -95,21 +97,27 @@ public class Statistics {
         return new HashSet<>(notFoundPages);
     }
     
+    public Set<String> getAllExistingFullUrls() {
+        return buildFullUrls(existingPages);
+    }
+    
+    public Set<String> getAllNotFoundFullUrls() {
+        return buildFullUrls(notFoundPages);
+    }
+    
+    private Set<String> buildFullUrls(Set<String> paths) {
+        String baseUrl = "https://example.com";
+        Set<String> urls = new HashSet<>();
+        for (String path : paths) {
+            if (path == null || path.isEmpty()) continue;
+            if (!path.startsWith("/")) path = "/" + path;
+            urls.add(baseUrl + path);
+        }
+        return urls;
+    }
+    
     public Map<String, Double> getOperatingSystemShare() {
-        if (osCount.isEmpty()) {
-            return new HashMap<>();
-        }
-        
-        int totalCount = osCount.values().stream().mapToInt(Integer::intValue).sum();
-        Map<String, Double> shareMap = new HashMap<>();
-        
-        for (Map.Entry<String, Integer> entry : osCount.entrySet()) {
-            double share = (double) entry.getValue() / totalCount;
-            shareMap.put(entry.getKey(), share);
-        }
-        
-        return shareMap;
-        
+        return calculateShare(osCount);
     }
     
     public Map<String, Double> getBrowserShare() {
@@ -117,15 +125,12 @@ public class Statistics {
     }
     
     private Map<String, Double> calculateShare(Map<String, Integer> countMap) {
-        if (countMap.isEmpty()) {
-            return new HashMap<>();
-        }
+        if (countMap.isEmpty()) return new HashMap<>();
         int total = countMap.values().stream().mapToInt(Integer::intValue).sum();
-        Map<String, Double> shareMap = new HashMap<>();
-        for (Map.Entry<String, Integer> entry : countMap.entrySet()) {
-            shareMap.put(entry.getKey(), (double) entry.getValue() / total);
+        Map<String, Double> share = new HashMap<>();
+        for (Map.Entry<String, Integer> e : countMap.entrySet()) {
+            share.put(e.getKey(), (double) e.getValue() / total);
         }
-        return shareMap;
+        return share;
     }
-    
 }
