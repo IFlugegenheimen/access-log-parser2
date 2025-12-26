@@ -107,6 +107,9 @@ public class Main {
                 System.out.printf("\n🕒 Среднее количество посещений сайта за час (не боты): %.2f%n", stats.getAverageVisitsPerHour());
                 System.out.printf("❌ Среднее количество ошибочных запросов за час (4xx/5xx): %.2f%n", stats.getAverageErrorsPerHour());
                 System.out.printf("👤 Средняя посещаемость на 1 пользователя: %.2f%n", stats.getAverageVisitsPerUser());
+                System.out.println("\n⚡ Пиковая посещаемость: " + stats.getMaxVisitsPerSecond() + " запросов/сек");
+                System.out.println("🔗 Ссылающиеся домены: " + stats.getReferringDomains());
+                System.out.println("🧑 Самый активный пользователь: " + stats.getMaxVisitsBySingleUser() + " посещений");
                 
             } catch (Exception e) {
                 System.err.println("❌ Ошибка: " + e.getMessage());

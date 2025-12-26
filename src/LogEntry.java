@@ -1,9 +1,6 @@
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.Locale;
 
 public class LogEntry {
     private final String ip;
@@ -11,7 +8,7 @@ public class LogEntry {
     private final HttpMethod method;
     private final String path;
     private final int responseCode;
-    private final int responseSize; // не long!
+    private final int responseSize;
     private final String referer;
     private final UserAgent userAgent;
     
@@ -40,31 +37,36 @@ public class LogEntry {
         if (statusSizeRef.length < 2) throw new IllegalArgumentException("Missing status or size");
         
         this.responseCode = Integer.parseInt(statusSizeRef[0]);
-        
         String sizeStr = statusSizeRef[1];
         this.responseSize = "-".equals(sizeStr) ? 0 : Integer.parseInt(sizeStr);
         
-        int lastQuote = logLine.lastIndexOf('"');
-        int prevQuote = logLine.lastIndexOf('"', lastQuote - 1);
-        int prev2Quote = logLine.lastIndexOf('"', prevQuote - 1);
+        int quote1 = logLine.indexOf('"');
+        int quote2 = logLine.indexOf('"', quote1 + 1);
+        int quote3 = logLine.indexOf('"', quote2 + 1);
+        int quote4 = logLine.indexOf('"', quote3 + 1);
+        int quote5 = logLine.indexOf('"', quote4 + 1);
+        int quote6 = logLine.indexOf('"', quote5 + 1);
         
-        if (prev2Quote == -1) {
+        if (quote5 == -1) {
             this.referer = "-";
-            this.userAgent = new UserAgent(logLine.substring(prevQuote + 1, lastQuote));
+            this.userAgent = new UserAgent(logLine.substring(quote3 + 1, quote4));
+        } else if (quote6 == -1) {
+            this.referer = logLine.substring(quote3 + 1, quote4).trim();
+            this.userAgent = new UserAgent(logLine.substring(quote4 + 1).trim());
         } else {
-            this.referer = logLine.substring(prev2Quote + 1, prevQuote);
-            this.userAgent = new UserAgent(logLine.substring(prevQuote + 1, lastQuote));
+            this.referer = logLine.substring(quote3 + 1, quote4).trim();
+            this.userAgent = new UserAgent(logLine.substring(quote5 + 1, quote6).trim());
         }
     }
     
     private LocalDateTime parseTimestamp(String ts) {
         int spaceIndex = ts.indexOf(' ');
         if (spaceIndex == -1) {
-            throw new IllegalArgumentException("Неверный формат времени: " + ts);
+            throw new IllegalArgumentException("Invalid timestamp format: " + ts);
         }
         String dateTimePart = ts.substring(0, spaceIndex);
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MMM/yyyy:HH:mm:ss")
-                .withLocale(java.util.Locale.ENGLISH);
+                .withLocale(Locale.ENGLISH);
         return LocalDateTime.parse(dateTimePart, formatter);
     }
     
